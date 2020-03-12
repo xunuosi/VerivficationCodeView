@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -21,6 +22,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class VerificationCodeView extends AppCompatEditText implements TextWatcher {
+    private static final int INPUT_TYPE_NONE = 0;
+    private static final int INPUT_TYPE_NUM = 1;
+    private static final int INPUT_TYPE_TEXT = 2;
+
     private final float DEFAULT_BOTTOM_SEGMENT_WIDTH = GaugeUtil.dpToPx(40);
     private final float DEFAULT_FONT_SIZE = GaugeUtil.dpToPx(40);
     private final String DEFAULT_LINE_COLOR = "#FFCFCFCF";
@@ -45,6 +50,7 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
     private int _bottomLineNormalColor, _bottomLineFocusColor;
     private int _fontColor;
     private float _fontSize;
+    private int _inputType;
 
     public VerificationCodeView(Context context) {
         this(context, null);
@@ -64,14 +70,25 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
 
     private void initAttrs(Context context, AttributeSet attrs) {
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.VerificationCodeView);
+        try {
+            inputLimit = typedArray.getInt(R.styleable.VerificationCodeView_inputMax, 5);
+            _bottomLineNormalColor = typedArray.getColor(R.styleable.VerificationCodeView_bottomColor, Color.parseColor(DEFAULT_LINE_COLOR));
+            _bottomLineFocusColor = typedArray.getColor(R.styleable.VerificationCodeView_bottomFocusColor, Color.parseColor(DEFAULT_FOCUS_LINE_COLOR));
+            _fontColor = typedArray.getColor(R.styleable.VerificationCodeView_textColor, Color.parseColor(DEFAULT_FONT_COLOR));
+            _fontSize = typedArray.getDimension(R.styleable.VerificationCodeView_textSize, DEFAULT_FONT_SIZE);
+            _inputType = typedArray.getInt(R.styleable.VerificationCodeView_inputType, INPUT_TYPE_NUM);
+        } finally {
+            typedArray.recycle();
+        }
 
-        inputLimit = typedArray.getInt(R.styleable.VerificationCodeView_inputMax, 5);
-        _bottomLineNormalColor = typedArray.getColor(R.styleable.VerificationCodeView_bottomColor, Color.parseColor(DEFAULT_LINE_COLOR));
-        _bottomLineFocusColor = typedArray.getColor(R.styleable.VerificationCodeView_bottomFocusColor, Color.parseColor(DEFAULT_FOCUS_LINE_COLOR));
-        _fontColor = typedArray.getColor(R.styleable.VerificationCodeView_textColor, Color.parseColor(DEFAULT_FONT_COLOR));
-        _fontSize = typedArray.getDimension(R.styleable.VerificationCodeView_textSize, DEFAULT_FONT_SIZE);
-
-        typedArray.recycle();
+        switch (_inputType) {
+            case INPUT_TYPE_NUM:
+                setInputType(InputType.TYPE_CLASS_NUMBER);
+                break;
+            case INPUT_TYPE_TEXT:
+                setInputType(InputType.TYPE_CLASS_TEXT);
+                break;
+        }
 
         _paint.setColor(_bottomLineNormalColor);
         _paint.setStyle(Paint.Style.FILL_AND_STROKE);
