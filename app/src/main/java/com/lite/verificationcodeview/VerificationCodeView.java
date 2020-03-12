@@ -1,6 +1,7 @@
 package com.lite.verificationcodeview;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -22,17 +23,17 @@ import java.util.TimerTask;
 public class VerificationCodeView extends AppCompatEditText implements TextWatcher {
     private final float DEFAULT_BOTTOM_SEGMENT_WIDTH = GaugeUtil.dpToPx(40);
     private final float DEFAULT_FONT_SIZE = GaugeUtil.dpToPx(40);
+    private final String DEFAULT_LINE_COLOR = "#FFCFCFCF";
+    private final String DEFAULT_FOCUS_LINE_COLOR = "#FF557ECB";
+    private final String DEFAULT_FONT_COLOR = "#FF557ECB";
     private final float GAP_DISTANCE = GaugeUtil.dpToPx(7);
     private final float POINTER_GAP = GaugeUtil.dpToPx(9);
     private final float TEXT_BOTTOM_GAP = POINTER_GAP;
     private final float POINTER_WIDTH = GaugeUtil.dpToPx(1.8f);
-    private final float POINTER_HEIGHT;
+    private float POINTER_HEIGHT;
 
     private Paint _paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final float LINE_HEIGHT = GaugeUtil.dpToPx(0.9f);
-    private final String DEFAULT_LINE_COLOR = "#FFCFCFCF";
-    private final String FOCUS_LINE_COLOR = "#FF557ECB";
-    private final String FONT_COLOR = "#FF557ECB";
     private float bottomRectLineWidth;
     private int inputLimit = 5;
     private TimerTask _cursorTimerTask;
@@ -41,6 +42,9 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
     private boolean _needVisibleCursor = _isVisibleCursor;
     private int _singleFontWidth, _singleFontHeight;
     private InputListener _inputListener;
+    private int _bottomLineNormalColor, _bottomLineFocusColor;
+    private int _fontColor;
+    private float _fontSize;
 
     public VerificationCodeView(Context context) {
         this(context, null);
@@ -53,12 +57,26 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
     public VerificationCodeView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
-        initAttrs(context, attrs);
         setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent));
-        _paint.setColor(Color.parseColor(DEFAULT_LINE_COLOR));
+        initAttrs(context, attrs);
+        refreshCursorFlickerState();
+    }
+
+    private void initAttrs(Context context, AttributeSet attrs) {
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.VerificationCodeView);
+
+        inputLimit = typedArray.getInt(R.styleable.VerificationCodeView_inputMax, 5);
+        _bottomLineNormalColor = typedArray.getColor(R.styleable.VerificationCodeView_bottomColor, Color.parseColor(DEFAULT_LINE_COLOR));
+        _bottomLineFocusColor = typedArray.getColor(R.styleable.VerificationCodeView_bottomFocusColor, Color.parseColor(DEFAULT_FOCUS_LINE_COLOR));
+        _fontColor = typedArray.getColor(R.styleable.VerificationCodeView_textColor, Color.parseColor(DEFAULT_FONT_COLOR));
+        _fontSize = typedArray.getDimension(R.styleable.VerificationCodeView_textSize, DEFAULT_FONT_SIZE);
+
+        typedArray.recycle();
+
+        _paint.setColor(_bottomLineNormalColor);
         _paint.setStyle(Paint.Style.FILL_AND_STROKE);
         _paint.setStrokeCap(Paint.Cap.ROUND);
-        _paint.setTextSize(DEFAULT_FONT_SIZE);
+        _paint.setTextSize(_fontSize);
 
         Rect bounds = new Rect();
         _paint.getTextBounds("中", 0, 1, bounds);
@@ -69,17 +87,10 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
         setFocusableInTouchMode(true);
         super.addTextChangedListener(this);
 
-        inputLimit = 5;
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             setLayoutDirection(LAYOUT_DIRECTION_LTR);
         }
 
-        refreshCursorFlickerState();
-    }
-
-    private void initAttrs(Context context, AttributeSet attrs) {
-//        context.obtainStyledAttributes(attrs, R.styleablet);
     }
 
     private void refreshCursorFlickerState() {
@@ -162,7 +173,7 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
         // Draw text
         _paint.setStyle(Paint.Style.FILL);
         _paint.setTextAlign(Paint.Align.CENTER);
-        _paint.setColor(Color.parseColor(FONT_COLOR));
+        _paint.setColor(_fontColor);
         String value = getText().toString();
         for (int i = 0; i < value.length(); i++) {
             float startPosition = bottomRectLineWidth / 2 + (bottomRectLineWidth + GAP_DISTANCE) * i;
@@ -173,9 +184,9 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
         for (int i = 0; i < inputLimit; i++) {
             float offset = (bottomRectLineWidth + GAP_DISTANCE) * i;
             if (i < value.length()) {
-                _paint.setColor(Color.parseColor(FOCUS_LINE_COLOR));
+                _paint.setColor(_bottomLineFocusColor);
             } else {
-                _paint.setColor(Color.parseColor(DEFAULT_LINE_COLOR));
+                _paint.setColor(_bottomLineNormalColor);
             }
             canvas.drawRoundRect(offset, getBottom() - getTop() - LINE_HEIGHT,
                     offset + bottomRectLineWidth, getBottom() - getTop(),
@@ -189,7 +200,7 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
         }
         if (_needVisibleCursor) {
             float cursorStartPosi = (bottomRectLineWidth + GAP_DISTANCE) * value.length() + bottomRectLineWidth / 2;
-            _paint.setColor(Color.parseColor(FONT_COLOR));
+            _paint.setColor(_fontColor);
             _paint.setStrokeWidth(POINTER_WIDTH);
             canvas.drawLine(cursorStartPosi, getBottom() - getTop() - POINTER_GAP - POINTER_HEIGHT,
                     cursorStartPosi, getBottom() - getTop() - POINTER_GAP, _paint);
@@ -233,6 +244,26 @@ public class VerificationCodeView extends AppCompatEditText implements TextWatch
         super.setCursorVisible(visibleCursor);
         _isVisibleCursor = visibleCursor;
         refreshCursorFlickerState();
+    }
+
+    public void setBottomLineNormalColor(int bottomLineNormalColor) {
+        _bottomLineNormalColor = bottomLineNormalColor;
+    }
+
+    public void setBottomLineFocusColor(int bottomLineFocusColor) {
+        _bottomLineFocusColor = bottomLineFocusColor;
+    }
+
+    public void setFontColor(int fontColor) {
+        _fontColor = fontColor;
+    }
+
+    public void setFontSize(float fontSize) {
+        _fontSize = fontSize;
+    }
+
+    public void setInputLimit(int inputLimit) {
+        this.inputLimit = inputLimit;
     }
 
     public void setInputListener(InputListener inputListener) {
