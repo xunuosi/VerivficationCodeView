@@ -20,7 +20,9 @@ import androidx.core.content.ContextCompat;
 
 import java.util.Timer;
 import java.util.TimerTask;
-
+/**
+ * @author North on 2020/03/08
+ */
 public class VerificationCodeView extends AppCompatEditText implements TextWatcher {
     private static final int INPUT_TYPE_NONE = 0;
     private static final int INPUT_TYPE_NUM = 1;
